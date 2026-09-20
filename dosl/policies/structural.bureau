@@ -1,0 +1,51 @@
+POLICY structural
+VERSION 4
+REGULATION "DoSL-2.1 -- Load-Bearing Requirements for Handheld Foodstuffs"
+
+# The Bureau of Structural Integrity has no opinion on flavour.
+# The Bureau of Structural Integrity has many opinions on height.
+
+NOTE "Assessed under the Standing Orders on Vertical Ambition."
+
+LET items = filling_count + condiment_count
+LET slenderness = round(height_mm / max(1, layers), 1)
+
+REQUIRE layers >= 2
+    ELSE DENY "Fewer than two slices of bread. This is an open-faced provocation." SEVERITY 8
+
+REQUIRE items >= 1
+    ELSE DENY "An empty sandwich is two slices of bread in a trench coat." SEVERITY 9
+
+REQUIRE height_mm <= 95
+    ELSE WARN "Exceeds the 95mm handheld ceiling. A fork may become necessary." SEVERITY 5
+
+WHEN height_mm > 60 AND NOT toasted THEN
+    PENALIZE 12 "Untoasted structures above 60mm are known to delaminate in transit."
+    NOTE "Delamination risk recorded. No further action at this time."
+END
+
+WHEN slenderness > 22 THEN
+    PENALIZE 7 "Slenderness ratio exceeds Annex F. The upper slice is doing too much."
+END
+
+WHEN cut == "chaotic" THEN
+    PENALIZE 18 "Cut geometry logged as CHAOTIC. The Bureau is not amused."
+OTHERWISE
+    WHEN cut == "diagonal" THEN
+        AWARD 9 "Diagonal cut. Textbook. Filed with quiet approval."
+    OTHERWISE
+        WHEN cut == "uncut" THEN
+            PENALIZE 4 "Uncut. Structurally defensible, socially unreadable."
+        END
+    END
+END
+
+WHEN crusts_removed THEN
+    PENALIZE 6 "Crust removal noted. A permanent entry has been made in your file."
+END
+
+WHEN items > 6 THEN
+    PENALIZE 3 * (items - 6) "Overfilling. Each surplus component is a future apology."
+END
+
+ASSESS 100 - round(height_mm / 12)

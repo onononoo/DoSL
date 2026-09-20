@@ -1,0 +1,41 @@
+POLICY temporal
+VERSION 5
+REGULATION "DoSL-11.9 -- Consumption Windows, Venues, and Standing"
+
+# The Temporal Compliance Division is concerned not with what you are eating
+# but with when, where, and how apologetically.
+
+LET venue = lower(consumed_at)
+LET desk_bound = venue MATCHES "desk" OR venue MATCHES "car" OR venue MATCHES "transit"
+
+REQUIRE hour >= 6
+    ELSE WARN "Pre-06:00 consumption. The Division is concerned, not condemning." SEVERITY 3
+
+REQUIRE hour <= 22
+    ELSE WARN "Post-22:00 consumption. This is a fourth meal and we both know it." SEVERITY 4
+
+WHEN desk_bound THEN
+    PENALIZE 13 "Consumption at a workstation or in a vehicle. Grief logged."
+    NOTE "Applicant advised that a table exists somewhere in the building."
+OTHERWISE
+    AWARD 10 "Consumption at a designated surface. The Division is moved."
+END
+
+WHEN venue MATCHES "standing" AND height_mm > 55 THEN
+    PENALIZE 9 "Tall sandwich, consumed standing. Physics has filed an objection."
+END
+
+WHEN urgency >= 7 THEN
+    PENALIZE 3 * (urgency - 6) "Declared urgency is elevated. Chewing quality is at risk."
+    NOTE "Expedited handling granted. Expedited handling changes nothing."
+END
+
+WHEN urgency <= 2 AND NOT desk_bound THEN
+    AWARD 8 "Unhurried consumption at a real surface. This is the intended experience."
+END
+
+WHEN hour >= 11 AND hour <= 14 AND NOT desk_bound THEN
+    AWARD 5 "Consumed within the sanctioned midday window. Textbook."
+END
+
+ASSESS 88 + min(6, clearance)

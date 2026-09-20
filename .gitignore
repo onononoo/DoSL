@@ -1,0 +1,18 @@
+# Build products
+/build/            # bureau_entropy.dll, forged at runtime
+/dist/             # DoSL-Counter.exe, dosl.exe
+/.pyibuild/        # PyInstaller scratch
+/.venv/
+*.egg-info/
+
+# Compiled policy cache -- regenerated from the .bureau sources on demand
+__bureaucache__/
+__pycache__/
+*.py[cod]
+
+# Generated assets
+/assets/dosl.ico
+
+# Adjudication output
+*.sdwx
+permanent-record.jsonl

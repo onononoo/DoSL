@@ -1,0 +1,45 @@
+POLICY condiment
+VERSION 3
+REGULATION "DoSL-7.4(a) -- On the Application of Spreadable Matter"
+
+# The Office of Condiment Affairs operates on the principle that a sandwich
+# is a suspension, and that every suspension has a failure point.
+
+LET wet = condiment_count
+LET unique = count(distinct(condiments))
+
+REQUIRE wet > 0
+    ELSE DENY "A dry sandwich is a cracker with ambitions." SEVERITY 7
+
+REQUIRE unique == wet
+    ELSE WARN "Duplicate condiments declared. The Office has questions." SEVERITY 2
+
+WHEN wet > 3 THEN
+    PENALIZE 6 * (wet - 3) "Moisture load exceeds the structural water table."
+END
+
+WHEN "ketchup" IN condiments AND bread MATCHES "brioche" THEN
+    PENALIZE 26 "Ketchup on brioche is a cry for help."
+    NOTE "Referred to the Sub-Committee on Regrettable Pairings."
+END
+
+WHEN "mayonnaise" IN condiments AND "mustard" IN condiments THEN
+    AWARD 11 "The classical emulsion-and-acid pairing. Correct."
+OTHERWISE
+    WHEN "mayonnaise" IN condiments THEN
+        PENALIZE 3 "Mayonnaise unaccompanied. Structurally permitted, spiritually inert."
+    END
+END
+
+WHEN has(condiments, "butter") AND has(condiments, "jam") AND filling_count > 0 THEN
+    PENALIZE 14 "Butter and jam alongside savoury filling. Two documents were filed."
+END
+
+REQUIRE NOT has(condiments, "gravy")
+    ELSE DENY "Gravy is not a condiment. Gravy is a weather system." SEVERITY 9
+
+WHEN wet == 1 AND "mustard" IN condiments THEN
+    AWARD 6 "Singular mustard. The Office recognises discipline when it sees it."
+END
+
+ASSESS 96 - 2 * max(0, wet - 2)

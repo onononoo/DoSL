@@ -1,0 +1,43 @@
+POLICY nomenclature
+VERSION 2
+REGULATION "DoSL-1.0 -- What Is, And What Is Not, A Sandwich"
+
+# The Directorate of Nomenclature does not decide whether your lunch is good.
+# It decides whether your lunch is, in the legal sense, happening.
+
+NOTE "The Directorate reminds applicants that precedent is not appetite."
+
+LET vessel = lower(bread)
+
+REQUIRE NOT (vessel MATCHES "tortilla" OR vessel MATCHES "wrap")
+    ELSE DENY "A wrap is a burrito with a press agent. Jurisdiction declined." SEVERITY 6
+
+REQUIRE NOT vessel MATCHES "bowl"
+    ELSE DENY "You have submitted a bowl. The Directorate handles bread." SEVERITY 9
+
+WHEN vessel MATCHES "baguette" AND layers == 2 THEN
+    NOTE "Hinged-vessel construction. Filed under DoSL-1.0 Annex C, reluctantly."
+    PENALIZE 5 "Hinged vessels remain a jurisdictional grey area."
+END
+
+WHEN layers > 2 THEN
+    AWARD 7 "Multi-deck construction. Unambiguously a sandwich. Refreshing."
+END
+
+WHEN cheese != "none" AND toasted AND filling_count == 0 THEN
+    NOTE "Classified as a toastie. Assessment continues under sandwich rules."
+    AWARD 4 "Toastie precedent applies. See DoSL-1.0(iv)."
+END
+
+WHEN count(words(declared_purpose)) > 12 THEN
+    PENALIZE 8 "Declared purpose exceeds twelve words. Brevity is also a virtue."
+END
+
+REQUIRE count(declared_purpose) > 0
+    ELSE WARN "No declared purpose. The Directorate has assumed 'hunger'." SEVERITY 1
+
+WHEN declared_purpose MATCHES "breakfast" AND hour > 14 THEN
+    PENALIZE 9 "Breakfast declared after 14:00. The Directorate has seen this before."
+END
+
+ASSESS 92

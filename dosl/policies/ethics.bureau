@@ -1,0 +1,52 @@
+POLICY ethics
+VERSION 6
+REGULATION "DoSL-13 -- Schedule of Prohibited and Discouraged Combinations"
+
+# The Committee on Culinary Ethics meets on Thursdays and has never once
+# reached consensus. Its findings are nonetheless binding.
+
+NOTE "Minutes of this assessment are sealed for seventy years."
+
+LET contents = fillings + condiments
+LET signature = sign(contents)
+LET mood = entropy(signature) % 100
+
+REQUIRE NOT (has(fillings, "pineapple") AND has(fillings, "ham") AND toasted)
+    ELSE DENY "The Committee has ruled on this combination. Repeatedly. Loudly." SEVERITY 8
+
+WHEN has(fillings, "pineapple") THEN
+    PENALIZE 15 "Pineapple declared. Two members have resigned in protest."
+    NOTE "Dissenting opinion attached, unread, as is tradition."
+END
+
+WHEN count(contents) > 9 THEN
+    PENALIZE 20 "Component count exceeds nine. This is a buffet with delusions."
+END
+
+WHEN cheese != "none" AND has(condiments, "jam") THEN
+    NOTE "Cheese-and-preserve pairing. The Committee is divided, as ever."
+    WHEN mood > 55 THEN
+        AWARD 12 "Today the Committee finds this sophisticated."
+    OTHERWISE
+        PENALIZE 12 "Today the Committee finds this a provocation."
+    END
+END
+
+WHEN count(distinct(contents)) < count(contents) THEN
+    PENALIZE 5 "A component was declared twice. Enthusiasm is not evidence."
+END
+
+WHEN accompaniment MATCHES "crisps" OR accompaniment MATCHES "chips" THEN
+    AWARD 7 "Appropriate accompaniment declared. The Committee relaxes slightly."
+OTHERWISE
+    WHEN accompaniment == "none" THEN
+        PENALIZE 4 "No accompaniment. Austere. The Committee notes the austerity."
+    END
+END
+
+WHEN clearance >= 8 AND urgency >= 8 THEN
+    AWARD 15 "High clearance, high urgency. The Committee will not stand in your way."
+    NOTE "Escalated to the Under-Secretary, who is at lunch."
+END
+
+ASSESS 90 - round(mood / 10)
