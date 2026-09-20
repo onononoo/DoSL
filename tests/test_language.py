@@ -53,6 +53,16 @@ def test_string_escapes() -> None:
     assert token.value == 'a\nb"c\\d'
 
 
+def test_keywords_are_case_insensitive() -> None:
+    """the shipped policies are lowercase; older uppercase sources still work."""
+    upper = run('ASSESS 1\nWHEN TRUE AND NOT FALSE THEN AWARD 5 "y" END')
+    lower = run('assess 1\nwhen true and not false then award 5 "y" end')
+    mixed = run('Assess 1\nWhen True And Not False Then Award 5 "y" End')
+    assert upper.score == lower.score == mixed.score == 6
+    # identifiers stay case-sensitive; only keywords are folded.
+    assert value_of("Bread", Bread=7) == 7
+
+
 def test_scanner_rejects_junk() -> None:
     for bad in ["POLICY x\nASSESS 1 & 2", "POLICY x\nNOTE 'single quotes'"]:
         try:
@@ -318,7 +328,7 @@ def test_policies_import_as_modules() -> None:
 
     assert condiment.POLICY.name == "condiment"
     assert condiment.VERSION >= 1
-    assert "POLICY condiment" in condiment.SOURCE
+    assert "policy condiment" in condiment.SOURCE
     assert condiment.__file__.endswith("condiment.bureau")
     assert ethics.POLICY is not condiment.POLICY
 

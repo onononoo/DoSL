@@ -56,7 +56,7 @@ class Authority:
 
         dossier = sdwx.Dossier(flags=flags)
         dossier.add_json(sdwx.Section.MANIFEST, "manifest", {
-            "format": "Sandwich Dossier Exchange",
+            "format": "sandwich dossier exchange",
             "reference": adjudication.reference,
             "issued": adjudication.issued,
             "verdict": adjudication.verdict.name,
@@ -131,13 +131,13 @@ class Authority:
                 + ", ".join(f"{s['name']}@{s['rva']:#x}" for s in info["sections"]))
         ok, complaints = self.ledger.verify()
         lines.append(f"record          {len(self.ledger)} entries, "
-                     f"{'intact' if ok else str(len(complaints)) + ' PROBLEM(S)'}")
+                     f"{'intact' if ok else str(len(complaints)) + ' problem(s)'}")
         for department in Department.all():
             try:
                 code = department.policy()
                 lines.append(
                     f"  {department.slug:<14} v{code.version} "
-                    f"{code.size:>5}B  {code.source_digest[:12]}  {department.title}")
+                    f"{code.size:>5}b  {code.source_digest[:12]}  {department.title}")
             except Exception as exc:
-                lines.append(f"  {department.slug:<14} FAILED: {exc}")
+                lines.append(f"  {department.slug:<14} failed: {exc}")
         return lines

@@ -1,52 +1,52 @@
-POLICY ethics
-VERSION 6
-REGULATION "DoSL-13 -- Schedule of Prohibited and Discouraged Combinations"
+policy ethics
+version 6
+regulation "dosl-13 -- schedule of prohibited and discouraged combinations"
 
-# The Committee on Culinary Ethics meets on Thursdays and has never once
-# reached consensus. Its findings are nonetheless binding.
+# the committee on culinary ethics meets on thursdays and has never once
+# reached consensus. its findings are nonetheless binding.
 
-NOTE "Minutes of this assessment are sealed for seventy years."
+note "minutes of this assessment are sealed for seventy years."
 
-LET contents = fillings + condiments
-LET signature = sign(contents)
-LET mood = entropy(signature) % 100
+let contents = fillings + condiments
+let signature = sign(contents)
+let mood = entropy(signature) % 100
 
-REQUIRE NOT (has(fillings, "pineapple") AND has(fillings, "ham") AND toasted)
-    ELSE DENY "The Committee has ruled on this combination. Repeatedly. Loudly." SEVERITY 8
+require not (has(fillings, "pineapple") and has(fillings, "ham") and toasted)
+    else deny "the committee has ruled on this combination. repeatedly. loudly." severity 8
 
-WHEN has(fillings, "pineapple") THEN
-    PENALIZE 15 "Pineapple declared. Two members have resigned in protest."
-    NOTE "Dissenting opinion attached, unread, as is tradition."
-END
+when has(fillings, "pineapple") then
+    penalize 15 "pineapple declared. two members have resigned in protest."
+    note "dissenting opinion attached, unread, as is tradition."
+end
 
-WHEN count(contents) > 9 THEN
-    PENALIZE 20 "Component count exceeds nine. This is a buffet with delusions."
-END
+when count(contents) > 9 then
+    penalize 20 "component count exceeds nine. this is a buffet with delusions."
+end
 
-WHEN cheese != "none" AND has(condiments, "jam") THEN
-    NOTE "Cheese-and-preserve pairing. The Committee is divided, as ever."
-    WHEN mood > 55 THEN
-        AWARD 12 "Today the Committee finds this sophisticated."
-    OTHERWISE
-        PENALIZE 12 "Today the Committee finds this a provocation."
-    END
-END
+when cheese != "none" and has(condiments, "jam") then
+    note "cheese-and-preserve pairing. the committee is divided, as ever."
+    when mood > 55 then
+        award 12 "today the committee finds this sophisticated."
+    otherwise
+        penalize 12 "today the committee finds this a provocation."
+    end
+end
 
-WHEN count(distinct(contents)) < count(contents) THEN
-    PENALIZE 5 "A component was declared twice. Enthusiasm is not evidence."
-END
+when count(distinct(contents)) < count(contents) then
+    penalize 5 "a component was declared twice. enthusiasm is not evidence."
+end
 
-WHEN accompaniment MATCHES "crisps" OR accompaniment MATCHES "chips" THEN
-    AWARD 7 "Appropriate accompaniment declared. The Committee relaxes slightly."
-OTHERWISE
-    WHEN accompaniment == "none" THEN
-        PENALIZE 4 "No accompaniment. Austere. The Committee notes the austerity."
-    END
-END
+when accompaniment matches "crisps" or accompaniment matches "chips" then
+    award 7 "appropriate accompaniment declared. the committee relaxes slightly."
+otherwise
+    when accompaniment == "none" then
+        penalize 4 "no accompaniment. austere. the committee notes the austerity."
+    end
+end
 
-WHEN clearance >= 8 AND urgency >= 8 THEN
-    AWARD 15 "High clearance, high urgency. The Committee will not stand in your way."
-    NOTE "Escalated to the Under-Secretary, who is at lunch."
-END
+when clearance >= 8 and urgency >= 8 then
+    award 15 "high clearance, high urgency. the committee will not stand in your way."
+    note "escalated to the under-secretary, who is at lunch."
+end
 
-ASSESS 90 - round(mood / 10)
+assess 90 - round(mood / 10)

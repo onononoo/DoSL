@@ -1,51 +1,51 @@
-POLICY structural
-VERSION 4
-REGULATION "DoSL-2.1 -- Load-Bearing Requirements for Handheld Foodstuffs"
+policy structural
+version 4
+regulation "dosl-2.1 -- load-bearing requirements for handheld foodstuffs"
 
-# The Bureau of Structural Integrity has no opinion on flavour.
-# The Bureau of Structural Integrity has many opinions on height.
+# the bureau of structural integrity has no opinion on flavour.
+# the bureau of structural integrity has many opinions on height.
 
-NOTE "Assessed under the Standing Orders on Vertical Ambition."
+note "assessed under the standing orders on vertical ambition."
 
-LET items = filling_count + condiment_count
-LET slenderness = round(height_mm / max(1, layers), 1)
+let items = filling_count + condiment_count
+let slenderness = round(height_mm / max(1, layers), 1)
 
-REQUIRE layers >= 2
-    ELSE DENY "Fewer than two slices of bread. This is an open-faced provocation." SEVERITY 8
+require layers >= 2
+    else deny "fewer than two slices of bread. this is an open-faced provocation." severity 8
 
-REQUIRE items >= 1
-    ELSE DENY "An empty sandwich is two slices of bread in a trench coat." SEVERITY 9
+require items >= 1
+    else deny "an empty sandwich is two slices of bread in a trench coat." severity 9
 
-REQUIRE height_mm <= 95
-    ELSE WARN "Exceeds the 95mm handheld ceiling. A fork may become necessary." SEVERITY 5
+require height_mm <= 95
+    else warn "exceeds the 95mm handheld ceiling. a fork may become necessary." severity 5
 
-WHEN height_mm > 60 AND NOT toasted THEN
-    PENALIZE 12 "Untoasted structures above 60mm are known to delaminate in transit."
-    NOTE "Delamination risk recorded. No further action at this time."
-END
+when height_mm > 60 and not toasted then
+    penalize 12 "untoasted structures above 60mm are known to delaminate in transit."
+    note "delamination risk recorded. no further action at this time."
+end
 
-WHEN slenderness > 22 THEN
-    PENALIZE 7 "Slenderness ratio exceeds Annex F. The upper slice is doing too much."
-END
+when slenderness > 22 then
+    penalize 7 "slenderness ratio exceeds annex f. the upper slice is doing too much."
+end
 
-WHEN cut == "chaotic" THEN
-    PENALIZE 18 "Cut geometry logged as CHAOTIC. The Bureau is not amused."
-OTHERWISE
-    WHEN cut == "diagonal" THEN
-        AWARD 9 "Diagonal cut. Textbook. Filed with quiet approval."
-    OTHERWISE
-        WHEN cut == "uncut" THEN
-            PENALIZE 4 "Uncut. Structurally defensible, socially unreadable."
-        END
-    END
-END
+when cut == "chaotic" then
+    penalize 18 "cut geometry logged as chaotic. the bureau is not amused."
+otherwise
+    when cut == "diagonal" then
+        award 9 "diagonal cut. textbook. filed with quiet approval."
+    otherwise
+        when cut == "uncut" then
+            penalize 4 "uncut. structurally defensible, socially unreadable."
+        end
+    end
+end
 
-WHEN crusts_removed THEN
-    PENALIZE 6 "Crust removal noted. A permanent entry has been made in your file."
-END
+when crusts_removed then
+    penalize 6 "crust removal noted. a permanent entry has been made in your file."
+end
 
-WHEN items > 6 THEN
-    PENALIZE 3 * (items - 6) "Overfilling. Each surplus component is a future apology."
-END
+when items > 6 then
+    penalize 3 * (items - 6) "overfilling. each surplus component is a future apology."
+end
 
-ASSESS 100 - round(height_mm / 12)
+assess 100 - round(height_mm / 12)

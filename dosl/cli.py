@@ -1,8 +1,8 @@
 """
-dosl.cli -- the Department's command line.
+dosl.cli -- the department's command line.
 
-The ``submit`` subcommand's flags are generated from :class:`Form27B6`, so
-the form, the GUI and the CLI cannot disagree about what the questions are.
+the ``submit`` subcommand's flags are generated from :class:`Form27B6`, so
+the form, the gui and the cli cannot disagree about what the questions are.
 """
 
 from __future__ import annotations
@@ -12,7 +12,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import __version__
+from . import __version__, support
 from .bureau import Authority, Form27B6
 from .bureau import certificate as cert  # the module, not the function it exports
 from .bureau.departments import Department
@@ -24,14 +24,14 @@ from .kernel.importer import compile_file
 
 BANNER = r"""
 +------------------------------------------------------------------------+
-|  D E P A R T M E N T   O F   S A N D W I C H   L E G I T I M A C Y     |
-|  Office of Adjudication and Standing            "NIHIL SINE FORMA"     |
+|  d e p a r t m e n t   o f   s a n d w i c h   l e g i t i m a c y     |
+|  office of adjudication and standing            "nihil sine forma"     |
 +------------------------------------------------------------------------+
 """
 
 
 def _stdout_utf8() -> None:
-    """Best-effort UTF-8 on a console that may be running code page 437."""
+    """best-effort utf-8 on a console that may be running code page 437."""
     for stream in (sys.stdout, sys.stderr):
         try:
             stream.reconfigure(encoding="utf-8", errors="replace")
@@ -44,8 +44,8 @@ def _stdout_utf8() -> None:
 # --------------------------------------------------------------------------
 
 def add_form_arguments(parser: argparse.ArgumentParser) -> None:
-    """Derive one ``--flag`` per form field, with the field's own help text."""
-    group = parser.add_argument_group("Form 27-B/6")
+    """derive one ``--flag`` per form field, with the field's own help text."""
+    group = parser.add_argument_group("form 27-b/6")
     for name, field in Form27B6.fields.items():
         flag = "--" + name.replace("_", "-")
         options = field.choices()
@@ -66,26 +66,26 @@ def add_form_arguments(parser: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dosl",
-        description="Department of Sandwich Legitimacy -- adjudication service.",
-        epilog="Run with no arguments to open the counter (graphical interface).",
+        description="department of sandwich legitimacy -- adjudication service.",
+        epilog="run with no arguments to open the counter (graphical interface).",
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--version", action="version",
-                        version=f"DoSL {__version__}")
+                        version=f"dosl {__version__}")
     parser.add_argument("--ledger", metavar="PATH", default=None,
-                        help=f"the Permanent Record (default: {default_path()})")
+                        help=f"the permanent record (default: {default_path()})")
     parser.add_argument("--no-native", action="store_true",
-                        help="ignore bureau_entropy.dll and use the Python kernels")
+                        help="ignore bureau_entropy.dll and use the python kernels")
 
     subs = parser.add_subparsers(dest="command", metavar="COMMAND")
 
-    submit = subs.add_parser("submit", help="submit Form 27-B/6 for adjudication")
+    submit = subs.add_parser("submit", help="submit form 27-b/6 for adjudication")
     submit.add_argument("--full", action="store_true", help="print the long report")
-    submit.add_argument("--json", action="store_true", help="print JSON instead")
+    submit.add_argument("--json", action="store_true", help="print json instead")
     submit.add_argument("--dossier", metavar="PATH", help="also write a .sdwx dossier")
     submit.add_argument("--no-record", action="store_true",
-                        help="do not write to the Permanent Record")
+                        help="do not write to the permanent record")
     submit.add_argument("--trace", action="store_true",
-                        help="record a VM instruction trace (slow, noisy)")
+                        help="record a vm instruction trace (slow, noisy)")
     submit.add_argument("--explain", action="store_true",
                         help="describe every field and exit")
     add_form_arguments(submit)
@@ -96,7 +96,7 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("policy", nargs="?", help="slug, or a path to a .bureau file")
     audit.add_argument("--source", action="store_true", help="print the source too")
 
-    record = subs.add_parser("record", help="read the Permanent Record")
+    record = subs.add_parser("record", help="read the permanent record")
     record.add_argument("--tail", type=int, default=12, metavar="N")
     record.add_argument("--verify", action="store_true", help="check the hash chain")
     record.add_argument("--stats", action="store_true")
@@ -107,12 +107,13 @@ def build_parser() -> argparse.ArgumentParser:
                          help="print one section's contents")
 
     forge = subs.add_parser("forge", help="build bureau_entropy.dll and describe it")
-    forge.add_argument("--out", type=Path, help="write the DLL here instead")
+    forge.add_argument("--out", type=Path, help="write the dll here instead")
     forge.add_argument("--disassemble", action="store_true",
                        help="hex dump each exported kernel")
 
     subs.add_parser("policies", help="list policies, fields and intrinsics")
     subs.add_parser("doctor", help="report on every moving part")
+    subs.add_parser("support", help="donation address and source links")
     return parser
 
 
@@ -122,7 +123,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 def cmd_submit(args, authority: Authority) -> int:
     if args.explain:
-        print(f"Form 27-B/6 -- {Form27B6.title}")
+        print(f"form 27-b/6 -- {Form27B6.title}")
         print("\n".join(field_help()))
         return 0
 
@@ -132,7 +133,7 @@ def cmd_submit(args, authority: Authority) -> int:
         form = Form27B6(**supplied)
         form.require_valid()
     except ValidationError as exc:
-        print(f"RETURNED FOR CORRECTION\n{exc}", file=sys.stderr)
+        print(f"returned for correction\n{exc}", file=sys.stderr)
         return 2
 
     adjudication, entry = authority.adjudicate(form, record=not args.no_record)
@@ -146,19 +147,30 @@ def cmd_submit(args, authority: Authority) -> int:
         print(cert.full_report(adjudication) if args.full
               else cert.render(adjudication))
         if entry:
-            print(f"\n  Permanent Record entry {entry.index}, hash {entry.short}...")
+            print(f"\n  permanent record entry {entry.index}, hash {entry.short}...")
 
     if args.dossier:
         size = authority.save_dossier(adjudication, args.dossier, entry)
-        print(f"  Dossier written: {args.dossier} ({size} bytes)")
+        print(f"  dossier written: {args.dossier} ({size} bytes)")
+
+    if not args.json:
+        # one line only. the full block lives behind `dosl support`, and
+        # anything printed here would end up glued to machine-readable output.
+        print(f"\n  {support.HEADING}: run `dosl support`  ::  "
+              f"btc {support.BTC_ADDRESS}")
 
     return 0 if adjudication.verdict.permitted else 1
+
+
+def cmd_support(args, authority: Authority) -> int:
+    print(support.as_text())
+    return 0
 
 
 def cmd_audit(args, authority: Authority) -> int:
     target = args.policy
     if not target:
-        print("Departments with policies:")
+        print("departments with policies:")
         for department in Department.all():
             print(f"  {department.slug:<14} {department.title}")
         return 0
@@ -184,11 +196,11 @@ def cmd_audit(args, authority: Authority) -> int:
 
 def cmd_record(args, authority: Authority) -> int:
     ledger: Ledger = authority.ledger
-    print(f"Permanent Record: {ledger.path}")
+    print(f"permanent record: {ledger.path}")
 
     if args.verify:
         ok, complaints = ledger.verify()
-        print(f"chain: {'INTACT' if ok else 'BROKEN'} over {len(ledger)} entries")
+        print(f"chain: {'intact' if ok else 'broken'} over {len(ledger)} entries")
         for complaint in complaints:
             print(f"  ! {complaint}")
         return 0 if ok else 1
@@ -202,7 +214,7 @@ def cmd_record(args, authority: Authority) -> int:
         print(f"  applicants     {stats['applicants']}")
         print(f"  mean score     {stats['mean_score']}")
         for verdict, count in stats["verdicts"].items():
-            print(f"  {verdict:<14} {count}")
+            print(f"  {verdict.lower():<14} {count}")
         print(f"  highest        {stats['best'].score:6.2f}  "
               f"{stats['best'].applicant}")
         print(f"  lowest         {stats['worst'].score:6.2f}  "
@@ -215,7 +227,8 @@ def cmd_record(args, authority: Authority) -> int:
         return 0
     print(f"  {'#':>4}  {'reference':<26} {'verdict':<12} {'score':>6}  applicant")
     for entry in entries:
-        print(f"  {entry.index:>4}  {entry.reference:<26} {entry.verdict:<12} "
+        print(f"  {entry.index:>4}  {entry.reference:<26} "
+              f"{entry.verdict.lower():<12} "
               f"{entry.score:>6.2f}  {entry.applicant}")
     return 0
 
@@ -261,7 +274,7 @@ def cmd_forge(args, authority: Authority) -> int:
     print(f"  machine        {info['machine']:#06x} (x86-64)")
     print(f"  image base     {info['image_base']:#018x}")
     print(f"  size of image  {info['size_of_image']:#x}")
-    print(f"  entry (DllMain) rva {info['entry_rva']:#x}")
+    print(f"  entry (dllmain) rva {info['entry_rva']:#x}")
     print("  sections")
     for section in info["sections"]:
         print(f"    {section['name']:<8} rva {section['rva']:#07x}  "
@@ -286,23 +299,23 @@ def cmd_forge(args, authority: Authority) -> int:
 
 
 def cmd_policies(args, authority: Authority) -> int:
-    print("DEPARTMENTS")
+    print("departments")
     for department in Department.all():
         code = department.policy()
         print(f"  {department.slug:<14} v{code.version}  w{department.weight:.1f}"
-              f"{'  VETO' if department.veto else '      '}"
-              f"{'  HALTS' if department.halts else ''}")
+              f"{'  veto' if department.veto else '      '}"
+              f"{'  halts' if department.halts else ''}")
         print(f"  {'':<14} {department.title} -- \"{department.motto}\"")
         print(f"  {'':<14} {code.regulation}")
 
-    print("\nFORM 27-B/6 FIELDS VISIBLE TO POLICIES")
+    print("\nform 27-b/6 fields visible to policies")
     sample = Form27B6().environment()
     for key in sorted(sample):
         value = sample[key]
         shown = f"[{', '.join(value)}]" if isinstance(value, list) else repr(value)
         print(f"  {key:<20} {type(value).__name__:<6} e.g. {shown}")
 
-    print("\nINTRINSIC FUNCTIONS")
+    print("\nintrinsic functions")
     for line in intrinsics.describe():
         print(f"  {line}")
     return 0
@@ -311,6 +324,8 @@ def cmd_policies(args, authority: Authority) -> int:
 def cmd_doctor(args, authority: Authority) -> int:
     print(BANNER)
     print("\n".join(authority.diagnostics()))
+    print()
+    print(support.as_text())
     return 0
 
 
@@ -328,7 +343,7 @@ def cmd_gui(args, authority: Authority) -> int:
 COMMANDS = {
     "submit": cmd_submit, "gui": cmd_gui, "audit": cmd_audit,
     "record": cmd_record, "inspect": cmd_inspect, "forge": cmd_forge,
-    "policies": cmd_policies, "doctor": cmd_doctor,
+    "policies": cmd_policies, "doctor": cmd_doctor, "support": cmd_support,
 }
 
 
@@ -337,7 +352,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
-    # No arguments at all means somebody double-clicked the .exe.
+    # no arguments at all means somebody double-clicked the .exe.
     command = args.command or "gui"
 
     authority = Authority(args.ledger, prefer_native=not args.no_native,

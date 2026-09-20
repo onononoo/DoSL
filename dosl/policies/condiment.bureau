@@ -1,45 +1,45 @@
-POLICY condiment
-VERSION 3
-REGULATION "DoSL-7.4(a) -- On the Application of Spreadable Matter"
+policy condiment
+version 3
+regulation "dosl-7.4(a) -- on the application of spreadable matter"
 
-# The Office of Condiment Affairs operates on the principle that a sandwich
+# the office of condiment affairs operates on the principle that a sandwich
 # is a suspension, and that every suspension has a failure point.
 
-LET wet = condiment_count
-LET unique = count(distinct(condiments))
+let wet = condiment_count
+let unique = count(distinct(condiments))
 
-REQUIRE wet > 0
-    ELSE DENY "A dry sandwich is a cracker with ambitions." SEVERITY 7
+require wet > 0
+    else deny "a dry sandwich is a cracker with ambitions." severity 7
 
-REQUIRE unique == wet
-    ELSE WARN "Duplicate condiments declared. The Office has questions." SEVERITY 2
+require unique == wet
+    else warn "duplicate condiments declared. the office has questions." severity 2
 
-WHEN wet > 3 THEN
-    PENALIZE 6 * (wet - 3) "Moisture load exceeds the structural water table."
-END
+when wet > 3 then
+    penalize 6 * (wet - 3) "moisture load exceeds the structural water table."
+end
 
-WHEN "ketchup" IN condiments AND bread MATCHES "brioche" THEN
-    PENALIZE 26 "Ketchup on brioche is a cry for help."
-    NOTE "Referred to the Sub-Committee on Regrettable Pairings."
-END
+when "ketchup" in condiments and bread matches "brioche" then
+    penalize 26 "ketchup on brioche is a cry for help."
+    note "referred to the sub-committee on regrettable pairings."
+end
 
-WHEN "mayonnaise" IN condiments AND "mustard" IN condiments THEN
-    AWARD 11 "The classical emulsion-and-acid pairing. Correct."
-OTHERWISE
-    WHEN "mayonnaise" IN condiments THEN
-        PENALIZE 3 "Mayonnaise unaccompanied. Structurally permitted, spiritually inert."
-    END
-END
+when "mayonnaise" in condiments and "mustard" in condiments then
+    award 11 "the classical emulsion-and-acid pairing. correct."
+otherwise
+    when "mayonnaise" in condiments then
+        penalize 3 "mayonnaise unaccompanied. structurally permitted, spiritually inert."
+    end
+end
 
-WHEN has(condiments, "butter") AND has(condiments, "jam") AND filling_count > 0 THEN
-    PENALIZE 14 "Butter and jam alongside savoury filling. Two documents were filed."
-END
+when has(condiments, "butter") and has(condiments, "jam") and filling_count > 0 then
+    penalize 14 "butter and jam alongside savoury filling. two documents were filed."
+end
 
-REQUIRE NOT has(condiments, "gravy")
-    ELSE DENY "Gravy is not a condiment. Gravy is a weather system." SEVERITY 9
+require not has(condiments, "gravy")
+    else deny "gravy is not a condiment. gravy is a weather system." severity 9
 
-WHEN wet == 1 AND "mustard" IN condiments THEN
-    AWARD 6 "Singular mustard. The Office recognises discipline when it sees it."
-END
+when wet == 1 and "mustard" in condiments then
+    award 6 "singular mustard. the office recognises discipline when it sees it."
+end
 
-ASSESS 96 - 2 * max(0, wet - 2)
+assess 96 - 2 * max(0, wet - 2)

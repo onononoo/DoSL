@@ -1,43 +1,43 @@
-POLICY nomenclature
-VERSION 2
-REGULATION "DoSL-1.0 -- What Is, And What Is Not, A Sandwich"
+policy nomenclature
+version 2
+regulation "dosl-1.0 -- what is, and what is not, a sandwich"
 
-# The Directorate of Nomenclature does not decide whether your lunch is good.
-# It decides whether your lunch is, in the legal sense, happening.
+# the directorate of nomenclature does not decide whether your lunch is good.
+# it decides whether your lunch is, in the legal sense, happening.
 
-NOTE "The Directorate reminds applicants that precedent is not appetite."
+note "the directorate reminds applicants that precedent is not appetite."
 
-LET vessel = lower(bread)
+let vessel = lower(bread)
 
-REQUIRE NOT (vessel MATCHES "tortilla" OR vessel MATCHES "wrap")
-    ELSE DENY "A wrap is a burrito with a press agent. Jurisdiction declined." SEVERITY 6
+require not (vessel matches "tortilla" or vessel matches "wrap")
+    else deny "a wrap is a burrito with a press agent. jurisdiction declined." severity 6
 
-REQUIRE NOT vessel MATCHES "bowl"
-    ELSE DENY "You have submitted a bowl. The Directorate handles bread." SEVERITY 9
+require not vessel matches "bowl"
+    else deny "you have submitted a bowl. the directorate handles bread." severity 9
 
-WHEN vessel MATCHES "baguette" AND layers == 2 THEN
-    NOTE "Hinged-vessel construction. Filed under DoSL-1.0 Annex C, reluctantly."
-    PENALIZE 5 "Hinged vessels remain a jurisdictional grey area."
-END
+when vessel matches "baguette" and layers == 2 then
+    note "hinged-vessel construction. filed under dosl-1.0 annex c, reluctantly."
+    penalize 5 "hinged vessels remain a jurisdictional grey area."
+end
 
-WHEN layers > 2 THEN
-    AWARD 7 "Multi-deck construction. Unambiguously a sandwich. Refreshing."
-END
+when layers > 2 then
+    award 7 "multi-deck construction. unambiguously a sandwich. refreshing."
+end
 
-WHEN cheese != "none" AND toasted AND filling_count == 0 THEN
-    NOTE "Classified as a toastie. Assessment continues under sandwich rules."
-    AWARD 4 "Toastie precedent applies. See DoSL-1.0(iv)."
-END
+when cheese != "none" and toasted and filling_count == 0 then
+    note "classified as a toastie. assessment continues under sandwich rules."
+    award 4 "toastie precedent applies. see dosl-1.0(iv)."
+end
 
-WHEN count(words(declared_purpose)) > 12 THEN
-    PENALIZE 8 "Declared purpose exceeds twelve words. Brevity is also a virtue."
-END
+when count(words(declared_purpose)) > 12 then
+    penalize 8 "declared purpose exceeds twelve words. brevity is also a virtue."
+end
 
-REQUIRE count(declared_purpose) > 0
-    ELSE WARN "No declared purpose. The Directorate has assumed 'hunger'." SEVERITY 1
+require count(declared_purpose) > 0
+    else warn "no declared purpose. the directorate has assumed 'hunger'." severity 1
 
-WHEN declared_purpose MATCHES "breakfast" AND hour > 14 THEN
-    PENALIZE 9 "Breakfast declared after 14:00. The Directorate has seen this before."
-END
+when declared_purpose matches "breakfast" and hour > 14 then
+    penalize 9 "breakfast declared after 14:00. the directorate has seen this before."
+end
 
-ASSESS 92
+assess 92

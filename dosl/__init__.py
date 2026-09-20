@@ -1,16 +1,16 @@
 """
-The Department of Sandwich Legitimacy (DoSL).
+the department of sandwich legitimacy (dosl).
 
-A fully operational sandwich authorization authority. Submit Form 27-B/6,
+a fully operational sandwich authorization authority. submit form 27-b/6,
 and a chain of departments will evaluate your sandwich against compiled
 policy bytecode, sign the outcome into a tamper-evident ledger, and issue
 you a numbered certificate you can show to absolutely no one.
 
-Nothing about this needed to be this complicated.
+nothing about this needed to be this complicated.
 """
 
 __version__ = "1.0.0"
-__all__ = ["__version__"]
+__all__ = ["__version__", "MOTTO"]
 
-#: Printed on every certificate. Do not translate.
-MOTTO = "NIHIL SINE FORMA"
+#: printed on every certificate. do not translate.
+MOTTO = "nihil sine forma"

@@ -15,7 +15,7 @@ from typing import Any, ClassVar, Iterable
 
 
 class ValidationError(ValueError):
-    """One field is wrong. The Department will tell you which."""
+    """one field is wrong. the department will tell you which."""
 
     def __init__(self, field: str, message: str) -> None:
         super().__init__(f"{field}: {message}")
@@ -263,7 +263,7 @@ class Form(metaclass=FormMeta):
         problems = self.problems()
         if problems:
             raise ValidationError(
-                "Form 27-B/6",
+                "form 27-b/6",
                 "returned for correction --\n  "
                 + "\n  ".join(str(p) for p in problems))
 
@@ -304,69 +304,69 @@ COMMON_CONDIMENTS = ["mustard", "mayonnaise", "ketchup", "butter", "jam",
 
 
 class Form27B6(Form):
-    """The Sandwich Legitimacy Application. There is no Form 27-B/5."""
+    """the sandwich legitimacy application. there is no form 27-b/5."""
 
-    title = "Sandwich Legitimacy Application"
-    code = "27-B/6"
+    title = "sandwich legitimacy application"
+    code = "27-b/6"
 
     applicant = TextField(
-        "Name of applicant", "A. Citizen", max_length=48, section="Applicant",
-        help="As it appears on at least one document.")
+        "name of applicant", "a. citizen", max_length=48, section="applicant",
+        help="as it appears on at least one document.")
     declared_purpose = TextField(
-        "Declared purpose", "lunch", max_length=90, required=False,
-        section="Applicant",
-        help="The Directorate of Nomenclature reads this. Keep it under twelve words.")
+        "declared purpose", "lunch", max_length=90, required=False,
+        section="applicant",
+        help="the directorate of nomenclature reads this. keep it under twelve words.")
     clearance = IntField(
-        "Clearance level", 3, low=0, high=9, section="Applicant",
-        help="Self-assessed. The Department does not audit this. The Department knows.")
+        "clearance level", 3, low=0, high=9, section="applicant",
+        help="self-assessed. the department does not audit this. the department knows.")
 
     bread = TextField(
-        "Vessel", "rye", max_length=32, suggestions=BREADS, section="Construction",
-        help="Bread, or the closest thing you are prepared to call bread.")
+        "vessel", "rye", max_length=32, suggestions=BREADS, section="construction",
+        help="bread, or the closest thing you are prepared to call bread.")
     layers = IntField(
-        "Bread layers", 2, low=1, high=6, section="Construction")
+        "bread layers", 2, low=1, high=6, section="construction")
     height_mm = IntField(
-        "Assembled height", 38, low=5, high=250, unit="mm", section="Construction")
+        "assembled height", 38, low=5, high=250, unit="mm", section="construction")
     cut = ChoiceField(
-        "Cut geometry", CUTS, "diagonal", section="Construction")
+        "cut geometry", CUTS, "diagonal", section="construction")
     crusts_removed = BoolField(
-        "Crusts removed", False, section="Construction",
-        help="Answer honestly. It will be cross-referenced.")
-    toasted = BoolField("Toasted", False, section="Construction")
+        "crusts removed", False, section="construction",
+        help="answer honestly. it will be cross-referenced.")
+    toasted = BoolField("toasted", False, section="construction")
 
     fillings = ListField(
-        "Fillings", ["pastrami"], max_items=12, suggestions=COMMON_FILLINGS,
-        section="Contents", help="Comma-separated.")
+        "fillings", ["pastrami"], max_items=12, suggestions=COMMON_FILLINGS,
+        section="contents", help="comma-separated.")
     condiments = ListField(
-        "Condiments", ["mustard"], max_items=8, suggestions=COMMON_CONDIMENTS,
-        section="Contents", required=False, help="Comma-separated.")
-    cheese = ChoiceField("Cheese", CHEESES, "none", section="Contents")
+        "condiments", ["mustard"], max_items=8, suggestions=COMMON_CONDIMENTS,
+        section="contents", required=False, help="comma-separated.")
+    cheese = ChoiceField("cheese", CHEESES, "none", section="contents")
 
     consumed_at = ChoiceField(
-        "Consumption venue", VENUES, "kitchen table", section="Circumstances")
+        "consumption venue", VENUES, "kitchen table", section="circumstances")
     hour = IntField(
-        "Hour of consumption", 13, low=0, high=23, unit="h", section="Circumstances")
+        "hour of consumption", 13, low=0, high=23, unit="h", section="circumstances")
     urgency = IntField(
-        "Declared urgency", 2, low=0, high=9, section="Circumstances")
+        "declared urgency", 2, low=0, high=9, section="circumstances")
     accompaniment = ChoiceField(
-        "Accompaniment", ACCOMPANIMENTS, "crisps", section="Circumstances")
+        "accompaniment", ACCOMPANIMENTS, "crisps", section="circumstances")
 
     def cross_check(self) -> list[ValidationError]:
         problems: list[ValidationError] = []
         if self.layers == 1 and self.height_mm > 40:
             problems.append(ValidationError(
-                "Assembled height",
+                "assembled height",
                 "a single slice cannot be 40mm tall; check one of these two numbers"))
         if self.crusts_removed and self.bread.casefold() in ("baguette", "bagel"):
             problems.append(ValidationError(
-                "Crusts removed",
+                "crusts removed",
                 f"a {self.bread} is substantially crust; the claim is not credible"))
         overlap = set(self.fillings) & set(self.condiments)
         if overlap:
             problems.append(ValidationError(
-                "Contents",
+                "contents",
                 f"{', '.join(sorted(overlap))} declared as both filling and "
-                f"condiment; the Department requires you to choose"))
+                f"condiment; the department requires you to choose"))
         return problems
 
     # ------------------------------------------------------- VM environment

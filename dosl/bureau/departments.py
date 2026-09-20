@@ -27,13 +27,13 @@ from .forms import Form27B6
 
 
 class Verdict(Enum):
-    """The five things the Department is prepared to say about a sandwich."""
+    """the five things the department is prepared to say about a sandwich."""
 
-    APPROVED = ("APPROVED", "Proceed. Enjoy is a strong word.")
-    CONDITIONAL = ("APPROVED WITH CONDITIONS", "Proceed, but the file stays open.")
-    PROVISIONAL = ("PROVISIONALLY TOLERATED", "Consume quickly and say nothing.")
-    REFERRED = ("REFERRED FOR REVIEW", "A committee will consider this. Eventually.")
-    DENIED = ("DENIED", "You may not have this sandwich. You may have soup.")
+    APPROVED = ("approved", "proceed. enjoy is a strong word.")
+    CONDITIONAL = ("approved with conditions", "proceed, but the file stays open.")
+    PROVISIONAL = ("provisionally tolerated", "consume quickly and say nothing.")
+    REFERRED = ("referred for review", "a committee will consider this. eventually.")
+    DENIED = ("denied", "you may not have this sandwich. you may have soup.")
 
     def __init__(self, label: str, advice: str) -> None:
         self.label, self.advice = label, advice
@@ -106,7 +106,7 @@ class Department(abc.ABC, metaclass=DepartmentMeta):
             code = getattr(module, "POLICY", None)
             if not isinstance(code, PolicyCode):
                 raise DepartmentError(
-                    f"dosl.policies.{cls.slug} is a Python module, not a policy")
+                    f"dosl.policies.{cls.slug} is a python module, not a policy")
             cls._cache[cls.slug] = code
         return cls._cache[cls.slug]
 
@@ -126,8 +126,8 @@ class Department(abc.ABC, metaclass=DepartmentMeta):
 
 class DirectorateOfNomenclature(Department):
     slug = "nomenclature"
-    title = "Directorate of Nomenclature"
-    motto = "Precedent is not appetite."
+    title = "directorate of nomenclature"
+    motto = "precedent is not appetite."
     weight = 1.4
     veto = True
     halts = True  # if it is not a sandwich, nothing else is relevant
@@ -136,8 +136,8 @@ class DirectorateOfNomenclature(Department):
 
 class BureauOfStructuralIntegrity(Department):
     slug = "structural"
-    title = "Bureau of Structural Integrity"
-    motto = "Every sandwich is a bridge."
+    title = "bureau of structural integrity"
+    motto = "every sandwich is a bridge."
     weight = 1.2
     veto = True
     order = 20
@@ -145,8 +145,8 @@ class BureauOfStructuralIntegrity(Department):
 
 class OfficeOfCondimentAffairs(Department):
     slug = "condiment"
-    title = "Office of Condiment Affairs"
-    motto = "A suspension has a failure point."
+    title = "office of condiment affairs"
+    motto = "a suspension has a failure point."
     weight = 1.0
     veto = False
     order = 30
@@ -154,8 +154,8 @@ class OfficeOfCondimentAffairs(Department):
 
 class TemporalComplianceDivision(Department):
     slug = "temporal"
-    title = "Temporal Compliance Division"
-    motto = "When, where, and how apologetically."
+    title = "temporal compliance division"
+    motto = "when, where, and how apologetically."
     weight = 0.8
     veto = False
     order = 40
@@ -163,8 +163,8 @@ class TemporalComplianceDivision(Department):
 
 class CommitteeOnCulinaryEthics(Department):
     slug = "ethics"
-    title = "Committee on Culinary Ethics"
-    motto = "Binding, despite everything."
+    title = "committee on culinary ethics"
+    motto = "binding, despite everything."
     weight = 1.1
     veto = False
     order = 50
@@ -295,7 +295,7 @@ class Tribunal:
                 slug=department.slug, title=department.title,
                 weight=department.weight, veto=department.veto)
             if halted:
-                # The remaining departments are recorded as not having been
+                # the remaining departments are recorded as not having been
                 # asked, which is different from having had no objection.
                 result.error = "not convened: jurisdiction declined above"
                 results.append(result)
@@ -321,7 +321,10 @@ class Tribunal:
             score=round(score, 2),
             results=results,
             form=form.as_dict(),
-            issued=now.replace(microsecond=0).isoformat(),
+            # a space separator rather than the default "T": still valid
+            # iso 8601, still round-trips through datetime.fromisoformat, and
+            # it does not shout on a certificate that is otherwise lowercase.
+            issued=now.replace(microsecond=0).isoformat(sep=" "),
             engine=f"{self.engine.backend}: {self.engine.detail}",
         )
         adjudication.seal = self.seal(adjudication)
@@ -358,8 +361,8 @@ class Tribunal:
             form.applicant, "|".join(sorted(form.fillings)),
             "|".join(sorted(form.condiments)), form.bread,
             now.strftime("%Y%m%d"))
-        return (f"DoSL-{now.strftime('%Y%m%d')}-"
-                f"{(digest >> 40) & 0xFFFF:04X}-{digest & 0xFFFFFF:06X}")
+        return (f"dosl-{now.strftime('%Y%m%d')}-"
+                f"{(digest >> 40) & 0xFFFF:04x}-{digest & 0xFFFFFF:06x}")
 
     def seal(self, adjudication: Adjudication) -> str:
         """A tamper-evident signature over the parts that matter."""
@@ -370,5 +373,5 @@ class Tribunal:
             *(f"{r.slug}={r.score:.2f}" for r in adjudication.results),
         ])
         digest = self.engine.digest(payload)
-        return "-".join(f"{(digest >> shift) & 0xFFFF:04X}"
+        return "-".join(f"{(digest >> shift) & 0xFFFF:04x}"
                         for shift in (48, 32, 16, 0))

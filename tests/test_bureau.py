@@ -1,4 +1,4 @@
-"""Self-tests for the bureaucracy: forms, departments, tribunal, ledger, GUI."""
+﻿"""Self-tests for the bureaucracy: forms, departments, tribunal, ledger, GUI."""
 
 from __future__ import annotations
 
@@ -25,7 +25,7 @@ def _authority(directory: str) -> Authority:
 
 def _good_form(**overrides) -> Form27B6:
     values = dict(
-        applicant="R. Milquetoast", bread="rye", fillings=["pastrami", "pickle"],
+        applicant="r. milquetoast", bread="rye", fillings=["pastrami", "pickle"],
         condiments=["mustard"], cheese="swiss", cut="diagonal", layers=2,
         height_mm=42, toasted=True, crusts_removed=False,
         consumed_at="kitchen table", hour=13, urgency=1,
@@ -56,8 +56,9 @@ def test_validation_reports_every_problem_at_once() -> None:
     problems = Form27B6(applicant="", bread="", fillings=[], layers=99,
                         hour=40, cut="spiral").problems()
     labels = {p.field for p in problems}
-    assert {"Name of applicant", "Vessel", "Fillings", "Bread layers",
-            "Hour of consumption", "Cut geometry"} <= labels, labels
+    assert {"name of applicant", "vessel", "fillings", "bread layers",
+            "hour of consumption", "cut geometry"} <= labels, labels
+    assert all(label == label.lower() for label in labels), labels
 
 
 def test_cross_field_checks() -> None:
@@ -77,7 +78,7 @@ def test_require_valid_raises_with_all_the_detail() -> None:
     try:
         Form27B6(applicant="", fillings=[]).require_valid()
     except ValidationError as exc:
-        assert "Name of applicant" in str(exc) and "Fillings" in str(exc)
+        assert "name of applicant" in str(exc) and "fillings" in str(exc)
         return
     raise AssertionError("an invalid form was accepted")
 
@@ -107,6 +108,7 @@ def test_every_department_is_registered_and_distinct() -> None:
     for department in departments:
         assert department.title and department.motto
         assert department.policy().name == department.slug
+        assert department.title == department.title.lower(), department.title
 
 
 def test_duplicate_slug_is_refused() -> None:
@@ -165,7 +167,7 @@ def test_adjudication_is_deterministic() -> None:
 
 def test_the_seal_changes_when_anything_material_changes() -> None:
     base = Tribunal().convene(_good_form(), when=FIXED_TIME)
-    other = Tribunal().convene(_good_form(applicant="Someone Else"), when=FIXED_TIME)
+    other = Tribunal().convene(_good_form(applicant="someone else"), when=FIXED_TIME)
     assert base.seal != other.seal
     assert base.reference != other.reference
 
@@ -173,7 +175,7 @@ def test_the_seal_changes_when_anything_material_changes() -> None:
 def test_a_broken_policy_does_not_break_the_tribunal() -> None:
     class Broken(Department):
         slug = "" or None  # unregistered on purpose
-        title = "Bureau of Things That Do Not Work"
+        title = "bureau of things that do not work"
         weight = 1.0
 
         @classmethod
@@ -193,7 +195,7 @@ def test_a_broken_policy_does_not_break_the_tribunal() -> None:
 def test_ledger_chains_entries() -> None:
     with tempfile.TemporaryDirectory() as directory:
         authority = _authority(directory)
-        entries = [authority.adjudicate(_good_form(applicant=f"Person {i}"))[1]
+        entries = [authority.adjudicate(_good_form(applicant=f"person {i}"))[1]
                    for i in range(5)]
 
         assert [e.index for e in entries] == [0, 1, 2, 3, 4]
@@ -210,10 +212,10 @@ def test_ledger_detects_an_edited_entry() -> None:
     with tempfile.TemporaryDirectory() as directory:
         authority = _authority(directory)
         for i in range(3):
-            authority.adjudicate(_good_form(applicant=f"Person {i}"))
+            authority.adjudicate(_good_form(applicant=f"person {i}"))
 
         lines = authority.ledger.path.read_text(encoding="utf-8").splitlines()
-        lines[1] = lines[1].replace('"Person 1"', '"Person X"')
+        lines[1] = lines[1].replace('"person 1"', '"person x"')
         authority.ledger.path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
         ok, complaints = authority.ledger.verify()
@@ -226,7 +228,7 @@ def test_ledger_detects_a_deleted_entry() -> None:
     with tempfile.TemporaryDirectory() as directory:
         authority = _authority(directory)
         for i in range(4):
-            authority.adjudicate(_good_form(applicant=f"Person {i}"))
+            authority.adjudicate(_good_form(applicant=f"person {i}"))
 
         lines = authority.ledger.path.read_text(encoding="utf-8").splitlines()
         del lines[2]
@@ -242,7 +244,7 @@ def test_ledger_statistics() -> None:
         authority = _authority(directory)
         assert authority.ledger.statistics()["count"] == 0
         authority.adjudicate(_good_form())
-        authority.adjudicate(_good_form(applicant="Other", bread="a bowl"))
+        authority.adjudicate(_good_form(applicant="other", bread="a bowl"))
 
         stats = authority.ledger.statistics()
         assert stats["count"] == 2 and stats["applicants"] == 2
@@ -311,14 +313,72 @@ def test_certificate_is_pure_ascii_and_fits_the_page() -> None:
         text.encode("ascii")  # raises if anything non-ASCII crept in
         longest = max(len(line) for line in text.splitlines())
         assert longest <= cert.WIDTH, f"a line is {longest} characters"
-    # The score row must fit without _fit having to break it: a wrapped
+    # the score row must fit without _fit having to break it: a wrapped
     # progress bar looks like a bug, because it is one.
     row = next(line for line in cert.render(adjudication).splitlines()
-               if "Composite legitimacy" in line)
+               if "composite legitimacy" in line)
     assert row.rstrip().endswith(f"{adjudication.score:6.2f}".strip()), row
-    assert len(f"  Composite legitimacy score   {cert._bar(100.0)}") <= cert.WIDTH
+    assert len(f"  composite legitimacy score   {cert._bar(100.0)}") <= cert.WIDTH
+
+
+def _prose_only(text: str) -> str:
+    """strip the things the house style does not govern.
+
+    urls are addresses, not prose: ``https://github.com/onononoo/DoSL`` has
+    to keep its spelling or the link stops being the link.
+    """
+    import re
+
+    return re.sub(r"https?://\S+", "", text)
+
+
+def test_everything_the_department_prints_is_lowercase() -> None:
+    """the house style. urls and user-supplied text are exempt; nothing else."""
+    adjudication = Tribunal().convene(
+        _good_form(fillings=["ham", "pineapple"], cut="chaotic"), when=FIXED_TIME)
+
+    for name, text in (("certificate", cert.render(adjudication)),
+                       ("full report", cert.full_report(adjudication))):
+        shouting = sorted({c for c in _prose_only(text) if c.isupper()})
+        assert not shouting, f"{name} contains upper case: {shouting}"
+
+    assert adjudication.reference == adjudication.reference.lower()
+    assert adjudication.seal == adjudication.seal.lower()
+    assert adjudication.verdict.label == adjudication.verdict.label.lower()
+    assert adjudication.engine == adjudication.engine.lower()
+
+    with tempfile.TemporaryDirectory() as directory:
+        diagnostics = "\n".join(_authority(directory).diagnostics())
+    # paths are the operating system's business, so judge only the prose.
+    prose = "\n".join(line.split("  ")[0] for line in diagnostics.splitlines())
+    assert not [c for c in prose if c.isupper()], prose
+
+
+def test_support_block_is_present_and_correct() -> None:
+    from dosl import support
+
+    assert support.BTC_ADDRESS == "bc1qs4z04ltddh6vaqd4stu3p4vekv253ht4cwqma4"
+    assert support.BTC_ADDRESS.startswith("bc1q") and len(support.BTC_ADDRESS) == 42
+
+    block = support.as_text()
+    # the blurb is wrapped on the way in, so compare with whitespace folded.
+    assert " ".join(support.BLURB.split()) in " ".join(block.split())
+    assert support.BTC_ADDRESS in block, "the address must never be wrapped"
+    assert support.SOURCE_URL in block and support.PROJECTS_URL in block
+    assert max(len(line) for line in block.splitlines()) <= cert.WIDTH
+    block.encode("ascii")
+
+    # the readme variant drops the repository link, since the readme is in it.
+    without = support.as_text(include_source=False)
+    assert support.SOURCE_URL not in without
+    assert support.PROJECTS_URL in without
+
+    # every long report carries the block, so a filed dossier carries it too.
+    adjudication = Tribunal().convene(_good_form(), when=FIXED_TIME)
+    report = cert.full_report(adjudication)
+    assert support.BTC_ADDRESS in report and support.PROJECTS_URL in report
     assert adjudication.reference in cert.render(adjudication)
-    assert "SCHEDULE C" in cert.full_report(adjudication)
+    assert "schedule c" in cert.full_report(adjudication)
     assert cert.one_line(adjudication).startswith(adjudication.reference)
 
 
@@ -354,7 +414,7 @@ def test_gui_builds_and_submits() -> None:
 
             app.reset()
             app.submit()
-            assert app.adjudication.applicant == "A. Citizen"
+            assert app.adjudication.applicant == "a. citizen"
 
             for index in range(len(app.tabs.tabs())):
                 app.tabs.select(index)

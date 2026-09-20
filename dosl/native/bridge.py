@@ -130,7 +130,7 @@ class PythonEngine(_Engine):
     """The reference implementation. Slow, portable, definitionally correct."""
 
     backend = "python"
-    detail = "pure-Python reference kernels"
+    detail = "pure-python reference kernels"
 
     def abi_version(self) -> int:
         return kernels.ABI_VERSION
@@ -175,10 +175,10 @@ class NativeEngine(_Engine):
         reported = self.lib.bureau_abi_version()
         if reported != kernels.ABI_VERSION:
             raise BridgeError(
-                f"ABI mismatch: DLL reports {reported:#010x}, "
+                f"abi mismatch: dll reports {reported:#010x}, "
                 f"expected {kernels.ABI_VERSION:#010x}"
             )
-        self.detail = f"{path.name} @ ABI {reported:#010x}"
+        self.detail = f"{path.name} @ abi {reported:#010x}"
 
     def _bind(self, symbol: str, argtypes: list, restype) -> None:
         try:

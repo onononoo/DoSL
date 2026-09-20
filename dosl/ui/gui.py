@@ -1,23 +1,26 @@
 """
 dosl.ui.gui -- the public counter.
 
-A tkinter window that looks like a form you would be handed and then told
-to fill in again. The left half is generated entirely from
+a tkinter window that looks like a form you would be handed and then told
+to fill in again. the left half is generated entirely from
 :class:`~dosl.bureau.forms.Form27B6`: adding a field to the form adds a
 widget here, with the right kind of control, automatically.
 
-The right half is where the Department explains itself: the certificate,
+the right half is where the department explains itself: the certificate,
 the long report, a per-department breakdown, the disassembled bytecode that
-produced it, the Permanent Record, and a diagnostics page for when none of
-it works.
+produced it, the permanent record, a diagnostics page for when none of it
+works, and the support + source tab.
 """
 
 from __future__ import annotations
 
+import re
 import tkinter as tk
+import webbrowser
 from tkinter import filedialog, messagebox, ttk
 from pathlib import Path
 
+from .. import support
 from ..bureau import Authority
 from ..bureau import certificate as cert  # the module, not the function
 from ..bureau.departments import Department, Verdict
@@ -27,8 +30,9 @@ from ..formats import sdwx
 MONO = ("Consolas", 9)
 MONO_SMALL = ("Consolas", 8)
 STAMP_FONT = ("Consolas", 16, "bold")
+ADDRESS_FONT = ("Consolas", 13, "bold")
 
-#: Rubber-stamp ink colours. Government green, government red.
+#: rubber-stamp ink colours. government green, government red.
 VERDICT_COLOUR = {
     Verdict.APPROVED: "#1c6b34",
     Verdict.CONDITIONAL: "#5c6b1c",
@@ -39,10 +43,14 @@ VERDICT_COLOUR = {
 
 PAPER = "#f4f1e8"
 INK = "#2b2b2b"
+HIGHLIGHT = "#fff29a"       # highlighter pen, for the btc address
+HIGHLIGHT_EDGE = "#c9a227"
+LINK = "#1a4fa0"
+LINK_ACTIVE = "#8f1d1d"
 
 
 class FieldWidget:
-    """Binds one :class:`FormField` to whichever Tk control suits it."""
+    """binds one :class:`FormField` to whichever tk control suits it."""
 
     def __init__(self, parent: tk.Widget, field: FormField, row: int) -> None:
         self.field = field
@@ -91,7 +99,7 @@ class FieldWidget:
 
 
 def _tooltip(widget: tk.Widget, text: str) -> None:
-    """A tooltip, because the help text has to live somewhere."""
+    """a tooltip, because the help text has to live somewhere."""
     window: list[tk.Toplevel] = []
 
     def show(_event=None):
@@ -116,7 +124,7 @@ def _tooltip(widget: tk.Widget, text: str) -> None:
 
 
 class Counter(tk.Tk):
-    """The main window. Counter 4. Counters 1 through 3 are closed."""
+    """the main window. counter 4. counters 1 through 3 are closed."""
 
     def __init__(self, authority: Authority) -> None:
         super().__init__()
@@ -124,7 +132,7 @@ class Counter(tk.Tk):
         self.adjudication = None
         self.entry = None
 
-        self.title("Department of Sandwich Legitimacy -- Counter 4")
+        self.title("department of sandwich legitimacy -- counter 4")
         self.geometry("1180x760")
         self.minsize(900, 600)
         try:
@@ -137,8 +145,8 @@ class Counter(tk.Tk):
         self._refresh_record()
         self._refresh_diagnostics()
         self.status.set(
-            f"Ready. Entropy engine: {authority.engine.backend}. "
-            f"Please do not lean on the counter.")
+            f"ready. entropy engine: {authority.engine.backend}. "
+            f"please do not lean on the counter.")
 
     # ------------------------------------------------------------ chrome
 
@@ -146,32 +154,33 @@ class Counter(tk.Tk):
         menu = tk.Menu(self)
 
         file_menu = tk.Menu(menu, tearoff=False)
-        file_menu.add_command(label="Save dossier as .sdwx...",
-                              command=self.save_dossier, accelerator="Ctrl+S")
-        file_menu.add_command(label="Open dossier...", command=self.open_dossier,
-                              accelerator="Ctrl+O")
+        file_menu.add_command(label="save dossier as .sdwx...",
+                              command=self.save_dossier, accelerator="ctrl+s")
+        file_menu.add_command(label="open dossier...", command=self.open_dossier,
+                              accelerator="ctrl+o")
         file_menu.add_separator()
-        file_menu.add_command(label="Exit", command=self.destroy)
-        menu.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="exit", command=self.destroy)
+        menu.add_cascade(label="file", menu=file_menu)
 
         record_menu = tk.Menu(menu, tearoff=False)
-        record_menu.add_command(label="Refresh", command=self._refresh_record)
-        record_menu.add_command(label="Verify hash chain", command=self.verify_record)
-        record_menu.add_command(label="Statistics", command=self.show_statistics)
-        menu.add_cascade(label="Permanent Record", menu=record_menu)
+        record_menu.add_command(label="refresh", command=self._refresh_record)
+        record_menu.add_command(label="verify hash chain", command=self.verify_record)
+        record_menu.add_command(label="statistics", command=self.show_statistics)
+        menu.add_cascade(label="permanent record", menu=record_menu)
 
         engine_menu = tk.Menu(menu, tearoff=False)
-        engine_menu.add_command(label="Rebuild bureau_entropy.dll",
+        engine_menu.add_command(label="rebuild bureau_entropy.dll",
                                 command=self.rebuild_dll)
-        engine_menu.add_command(label="Recompile all policies",
+        engine_menu.add_command(label="recompile all policies",
                                 command=self.recompile_policies)
-        engine_menu.add_command(label="Refresh diagnostics",
+        engine_menu.add_command(label="refresh diagnostics",
                                 command=self._refresh_diagnostics)
-        menu.add_cascade(label="Engine", menu=engine_menu)
+        menu.add_cascade(label="engine", menu=engine_menu)
 
         help_menu = tk.Menu(menu, tearoff=False)
-        help_menu.add_command(label="About the Department", command=self.about)
-        menu.add_cascade(label="Help", menu=help_menu)
+        help_menu.add_command(label="about the department", command=self.about)
+        help_menu.add_command(label=support.HEADING, command=self.show_support)
+        menu.add_cascade(label="help", menu=help_menu)
 
         self.config(menu=menu)
         self.bind("<Control-s>", lambda _e: self.save_dossier())
@@ -199,11 +208,11 @@ class Counter(tk.Tk):
                   font=("Segoe UI", 8)).pack(fill="x", padx=8, pady=3)
 
     def _build_form(self, parent: ttk.Frame) -> None:
-        ttk.Label(parent, text=f"FORM {Form27B6.code}", font=("Consolas", 11, "bold")
+        ttk.Label(parent, text=f"form {Form27B6.code}", font=("Consolas", 11, "bold")
                   ).pack(anchor="w", padx=6, pady=(2, 0))
         ttk.Label(parent, text=Form27B6.title, font=("Segoe UI", 9)
                   ).pack(anchor="w", padx=6)
-        ttk.Label(parent, text="All fields are compulsory, including the optional ones.",
+        ttk.Label(parent, text="all fields are compulsory, including the optional ones.",
                   font=("Segoe UI", 8, "italic"), foreground="#666"
                   ).pack(anchor="w", padx=6, pady=(0, 6))
 
@@ -218,33 +227,35 @@ class Counter(tk.Tk):
 
         buttons = ttk.Frame(parent)
         buttons.pack(fill="x", padx=6, pady=8)
-        submit = ttk.Button(buttons, text="SUBMIT FOR ADJUDICATION  (F5)",
+        submit = ttk.Button(buttons, text="submit for adjudication  (f5)",
                             command=self.submit)
         submit.pack(fill="x")
-        ttk.Button(buttons, text="Reset form", command=self.reset
+        ttk.Button(buttons, text="reset form", command=self.reset
                    ).pack(fill="x", pady=(4, 0))
-        ttk.Button(buttons, text="Surprise the Department", command=self.randomise
+        ttk.Button(buttons, text="surprise the department", command=self.randomise
                    ).pack(fill="x", pady=(4, 0))
+        ttk.Button(buttons, text=support.HEADING, command=self.show_support
+                   ).pack(fill="x", pady=(12, 0))
 
     def _build_tabs(self, parent: ttk.Frame) -> None:
-        self.stamp = tk.Label(parent, text="AWAITING SUBMISSION", font=STAMP_FONT,
+        self.stamp = tk.Label(parent, text="awaiting submission", font=STAMP_FONT,
                               foreground="#999", background=PAPER, pady=6)
         self.stamp.pack(fill="x")
 
         self.tabs = ttk.Notebook(parent)
         self.tabs.pack(fill="both", expand=True, pady=(4, 0))
 
-        self.certificate_view = self._text_tab("Certificate")
-        self.report_view = self._text_tab("Full report")
+        self.certificate_view = self._text_tab("certificate")
+        self.report_view = self._text_tab("full report")
 
         breakdown = ttk.Frame(self.tabs)
-        self.tabs.add(breakdown, text="Departments")
+        self.tabs.add(breakdown, text="departments")
         columns = ("score", "weight", "veto", "findings", "adjustments")
         self.tree = ttk.Treeview(breakdown, columns=columns, show="tree headings")
-        self.tree.heading("#0", text="Department")
+        self.tree.heading("#0", text="department")
         self.tree.column("#0", width=300, stretch=True)
         for column, width in zip(columns, (70, 60, 50, 70, 90)):
-            self.tree.heading(column, text=column.title())
+            self.tree.heading(column, text=column)
             self.tree.column(column, width=width, anchor="center", stretch=False)
         self.tree.pack(fill="both", expand=True, side="left")
         scroll = ttk.Scrollbar(breakdown, orient="vertical", command=self.tree.yview)
@@ -252,10 +263,10 @@ class Counter(tk.Tk):
         self.tree.configure(yscrollcommand=scroll.set)
 
         disassembly = ttk.Frame(self.tabs)
-        self.tabs.add(disassembly, text="Bytecode")
+        self.tabs.add(disassembly, text="bytecode")
         picker = ttk.Frame(disassembly)
         picker.pack(fill="x", pady=2)
-        ttk.Label(picker, text="Policy:").pack(side="left", padx=(4, 4))
+        ttk.Label(picker, text="policy:").pack(side="left", padx=(4, 4))
         self.policy_choice = tk.StringVar(value=Department.all()[0].slug)
         chooser = ttk.Combobox(
             picker, textvariable=self.policy_choice, state="readonly", width=20,
@@ -268,13 +279,85 @@ class Counter(tk.Tk):
         self.disassembly_view = _make_text(disassembly)
         self._show_disassembly()
 
-        self.record_view = self._text_tab("Permanent Record")
-        self.diagnostics_view = self._text_tab("Diagnostics")
+        self.record_view = self._text_tab("permanent record")
+        self.diagnostics_view = self._text_tab("diagnostics")
+        self._build_support_tab()
 
     def _text_tab(self, title: str) -> tk.Text:
         frame = ttk.Frame(self.tabs)
         self.tabs.add(frame, text=title)
         return _make_text(frame)
+
+    # ----------------------------------------------------- support + source
+
+    def _build_support_tab(self) -> None:
+        """the donation address, highlighted, copyable, with live links."""
+        frame = tk.Frame(self.tabs, background=PAPER)
+        self.tabs.add(frame, text=support.HEADING)
+        self.support_tab_index = len(self.tabs.tabs()) - 1
+
+        inner = tk.Frame(frame, background=PAPER)
+        inner.place(relx=0.5, rely=0.40, anchor="center")
+
+        tk.Label(inner, text=support.HEADING, font=("Consolas", 20, "bold"),
+                 background=PAPER, foreground=INK).pack(pady=(0, 4))
+        tk.Frame(inner, background=INK, height=2, width=420).pack(pady=(0, 16))
+
+        tk.Label(inner, text=support.BLURB, font=("Segoe UI", 11),
+                 background=PAPER, foreground=INK, wraplength=560,
+                 justify="center").pack(pady=(0, 18))
+
+        # the address gets a highlighter-pen box: a sunken frame in
+        # highlighter yellow, with the text large enough to read across a
+        # room and selectable in case the copy button is not believed.
+        box = tk.Frame(inner, background=HIGHLIGHT, highlightthickness=2,
+                       highlightbackground=HIGHLIGHT_EDGE,
+                       highlightcolor=HIGHLIGHT_EDGE)
+        box.pack(pady=(0, 10), ipadx=18, ipady=12)
+        tk.Label(box, text="btc", font=("Consolas", 10, "bold"),
+                 background=HIGHLIGHT, foreground="#6b5500").pack()
+        self.address_entry = tk.Entry(
+            box, font=ADDRESS_FONT, justify="center", width=len(support.BTC_ADDRESS) + 2,
+            background=HIGHLIGHT, foreground=INK, relief="flat",
+            borderwidth=0, highlightthickness=0, readonlybackground=HIGHLIGHT)
+        self.address_entry.insert(0, support.BTC_ADDRESS)
+        self.address_entry.configure(state="readonly")
+        self.address_entry.pack(pady=(2, 0))
+
+        self.copy_button = tk.Button(
+            inner, text="copy address", font=("Segoe UI", 11, "bold"),
+            command=self.copy_address, relief="raised", borderwidth=2,
+            padx=22, pady=8, cursor="hand2")
+        self.copy_button.pack(pady=(4, 22))
+
+        tk.Label(inner, text="source code and my other projects:",
+                 font=("Segoe UI", 10), background=PAPER,
+                 foreground=INK).pack(pady=(0, 6))
+        links = tk.Frame(inner, background=PAPER)
+        links.pack()
+        _link(links, support.SOURCE_URL).pack(side="left")
+        tk.Label(links, text="  ::  ", font=("Segoe UI", 10), background=PAPER,
+                 foreground="#888").pack(side="left")
+        _link(links, support.PROJECTS_URL).pack(side="left")
+
+    def copy_address(self) -> None:
+        """put the address on the clipboard, and say so."""
+        try:
+            self.clipboard_clear()
+            self.clipboard_append(support.BTC_ADDRESS)
+            self.update_idletasks()  # some window managers need this to stick
+        except tk.TclError as exc:
+            self.status.set(f"could not reach the clipboard: {exc}")
+            return
+
+        self.address_entry.selection_range(0, "end")
+        self.copy_button.configure(text="copied!")
+        self.after(1600, lambda: self.copy_button.configure(text="copy address"))
+        self.status.set(f"copied to clipboard: {support.BTC_ADDRESS}")
+
+    def show_support(self) -> None:
+        self.tabs.select(self.support_tab_index)
+        self.status.set(support.BLURB)
 
     # ------------------------------------------------------------ actions
 
@@ -287,17 +370,17 @@ class Counter(tk.Tk):
             form = self.collect()
             form.require_valid()
         except ValidationError as exc:
-            self.stamp.configure(text="RETURNED FOR CORRECTION", foreground="#8a4a1f")
-            self.status.set("The form has been returned. See the Certificate tab.")
+            self.stamp.configure(text="returned for correction", foreground="#8a4a1f")
+            self.status.set("the form has been returned. see the certificate tab.")
             _replace(self.certificate_view,
-                     "FORM 27-B/6 RETURNED FOR CORRECTION\n"
+                     "form 27-b/6 returned for correction\n"
                      + "=" * 60 + f"\n\n{exc}\n\n"
-                     + "Please correct the above and resubmit. The Department\n"
+                     + "please correct the above and resubmit. the department\n"
                        "appreciates your continued cooperation.\n")
             self.tabs.select(0)
             return
 
-        self.status.set("Convening departments...")
+        self.status.set("convening departments...")
         self.update_idletasks()
 
         self.adjudication, self.entry = self.authority.adjudicate(form)
@@ -313,7 +396,7 @@ class Counter(tk.Tk):
         self.status.set(
             f"{adjudication.reference} -- {adjudication.verdict.label} "
             f"at {adjudication.score:.2f}. "
-            f"Sealed into the Permanent Record as entry {self.entry.index}.")
+            f"sealed into the permanent record as entry {self.entry.index}.")
 
     def _fill_tree(self, adjudication) -> None:
         self.tree.delete(*self.tree.get_children())
@@ -331,7 +414,8 @@ class Counter(tk.Tk):
             for finding in result.outcome.findings:
                 self.tree.insert(
                     parent, "end",
-                    text=f"{finding.kind.name} sev {finding.severity}: {finding.message}")
+                    text=f"{finding.kind.name.lower()} sev {finding.severity}: "
+                         f"{finding.message}")
             for adjustment in result.outcome.adjustments:
                 self.tree.insert(
                     parent, "end",
@@ -344,18 +428,18 @@ class Counter(tk.Tk):
         blank = Form27B6()
         for name, widget in self.widgets.items():
             widget.set(getattr(blank, name))
-        self.status.set("Form reset. The previous form has not been forgotten.")
+        self.status.set("form reset. the previous form has not been forgotten.")
 
     def randomise(self) -> None:
-        """Fill the form with something the Department will regret seeing."""
+        """fill the form with something the department will regret seeing."""
         import random
 
         from ..bureau.forms import (
             ACCOMPANIMENTS, BREADS, CHEESES, COMMON_CONDIMENTS, COMMON_FILLINGS,
             CUTS, VENUES,
         )
-        names = ["R. Milquetoast", "D. Chaosworth", "P. Fenwick-Bland",
-                 "T. Burrito", "M. Underhill", "Q. Pemberton-Snape"]
+        names = ["r. milquetoast", "d. chaosworth", "p. fenwick-bland",
+                 "t. burrito", "m. underhill", "q. pemberton-snape"]
         purposes = ["lunch", "breakfast", "an emergency", "a working lunch",
                     "spite", "a second breakfast, unapologetically"]
 
@@ -392,7 +476,7 @@ class Counter(tk.Tk):
 
         for name, value in picks.items():
             self.widgets[name].set(value)
-        self.status.set("Form completed at random. This is also how it is assessed.")
+        self.status.set("form completed at random. this is also how it is assessed.")
 
     # -------------------------------------------------------------- views
 
@@ -419,7 +503,7 @@ class Counter(tk.Tk):
 
     def _refresh_record(self) -> None:
         ledger = self.authority.ledger
-        lines = [f"Permanent Record: {ledger.path}", ""]
+        lines = [f"permanent record: {ledger.path}", ""]
         entries = ledger.tail(60)
         if not entries:
             lines.append("  (empty -- no sandwich has yet been adjudicated)")
@@ -428,7 +512,8 @@ class Counter(tk.Tk):
                          f"{'score':>6}  {'hash':<14} applicant")
             for entry in entries:
                 lines.append(
-                    f"  {entry.index:>4}  {entry.reference:<26} {entry.verdict:<12} "
+                    f"  {entry.index:>4}  {entry.reference:<26} "
+                    f"{entry.verdict.lower():<12} "
                     f"{entry.score:>6.2f}  {entry.short:<14} {entry.applicant}")
         _replace(self.record_view, "\n".join(lines))
 
@@ -439,26 +524,26 @@ class Counter(tk.Tk):
 
     def save_dossier(self) -> None:
         if self.adjudication is None:
-            messagebox.showinfo("Nothing to file",
-                                "Submit a form before attempting to file it.")
+            messagebox.showinfo("nothing to file",
+                                "submit a form before attempting to file it.")
             return
         path = filedialog.asksaveasfilename(
             defaultextension=".sdwx", initialfile=f"{self.adjudication.reference}.sdwx",
-            filetypes=[("Sandwich Dossier Exchange", "*.sdwx"), ("All files", "*.*")])
+            filetypes=[("sandwich dossier exchange", "*.sdwx"), ("all files", "*.*")])
         if not path:
             return
         size = self.authority.save_dossier(self.adjudication, path, self.entry)
-        self.status.set(f"Dossier filed: {path} ({size} bytes).")
+        self.status.set(f"dossier filed: {path} ({size} bytes).")
 
     def open_dossier(self) -> None:
         path = filedialog.askopenfilename(
-            filetypes=[("Sandwich Dossier Exchange", "*.sdwx"), ("All files", "*.*")])
+            filetypes=[("sandwich dossier exchange", "*.sdwx"), ("all files", "*.*")])
         if not path:
             return
         try:
             dossier = sdwx.Dossier.read(Path(path))
         except (sdwx.SdwxError, OSError) as exc:
-            messagebox.showerror("Unreadable dossier", str(exc))
+            messagebox.showerror("unreadable dossier", str(exc))
             return
         text = ["\n".join(dossier.describe()), "", "=" * 74, ""]
         try:
@@ -467,32 +552,33 @@ class Counter(tk.Tk):
             text.append("(no certificate section)")
         _replace(self.report_view, "\n".join(text))
         self.tabs.select(1)
-        self.status.set(f"Opened {path}: {len(dossier)} sections, contents verified.")
+        self.status.set(f"opened {path}: {len(dossier)} sections, contents verified.")
 
     def verify_record(self) -> None:
         ok, complaints = self.authority.ledger.verify()
         if ok:
             messagebox.showinfo(
-                "Permanent Record",
-                f"Chain intact over {len(self.authority.ledger)} entries.")
+                "permanent record",
+                f"chain intact over {len(self.authority.ledger)} entries.")
         else:
             messagebox.showerror(
-                "Permanent Record",
-                "The chain is broken:\n\n" + "\n".join(complaints[:10]))
-        self.status.set("Hash chain verified." if ok else "HASH CHAIN BROKEN.")
+                "permanent record",
+                "the chain is broken:\n\n" + "\n".join(complaints[:10]))
+        self.status.set("hash chain verified." if ok else "hash chain broken.")
 
     def show_statistics(self) -> None:
         stats = self.authority.ledger.statistics()
         if not stats["count"]:
-            messagebox.showinfo("Statistics", "The Record is empty.")
+            messagebox.showinfo("statistics", "the record is empty.")
             return
-        body = [f"Entries:     {stats['count']}",
-                f"Applicants:  {stats['applicants']}",
-                f"Mean score:  {stats['mean_score']}", ""]
-        body += [f"{verdict:<14} {count}" for verdict, count in stats["verdicts"].items()]
-        body += ["", f"Highest: {stats['best'].score:.2f}  {stats['best'].applicant}",
-                 f"Lowest:  {stats['worst'].score:.2f}  {stats['worst'].applicant}"]
-        messagebox.showinfo("Statistics", "\n".join(body))
+        body = [f"entries:     {stats['count']}",
+                f"applicants:  {stats['applicants']}",
+                f"mean score:  {stats['mean_score']}", ""]
+        body += [f"{verdict.lower():<14} {count}"
+                 for verdict, count in stats["verdicts"].items()]
+        body += ["", f"highest: {stats['best'].score:.2f}  {stats['best'].applicant}",
+                 f"lowest:  {stats['worst'].score:.2f}  {stats['worst'].applicant}"]
+        messagebox.showinfo("statistics", "\n".join(body))
 
     def rebuild_dll(self) -> None:
         from ..native import bridge
@@ -505,9 +591,9 @@ class Counter(tk.Tk):
         self._refresh_diagnostics()
         self.tabs.select(5)
         messagebox.showinfo(
-            "Entropy engine",
-            f"Backend: {report.engine.backend}\n{report.engine.detail}\n\n"
-            f"{report.error or 'The DLL was rebuilt and loaded successfully.'}")
+            "entropy engine",
+            f"backend: {report.engine.backend}\n{report.engine.detail}\n\n"
+            f"{report.error or 'the dll was rebuilt and loaded successfully.'}")
 
     def recompile_policies(self) -> None:
         problems = []
@@ -519,20 +605,41 @@ class Counter(tk.Tk):
         self._show_disassembly()
         self._refresh_diagnostics()
         if problems:
-            messagebox.showerror("Recompilation", "\n".join(problems))
+            messagebox.showerror("recompilation", "\n".join(problems))
         else:
-            self.status.set("All policies recompiled from source.")
+            self.status.set("all policies recompiled from source.")
 
     def about(self) -> None:
         from .. import MOTTO, __version__
 
         messagebox.showinfo(
-            "About",
-            f"Department of Sandwich Legitimacy, version {__version__}\n"
+            "about",
+            f"department of sandwich legitimacy, version {__version__}\n"
             f"{MOTTO}\n\n"
-            f"Entropy engine: {self.authority.engine.backend}\n"
+            f"entropy engine: {self.authority.engine.backend}\n"
             f"{self.authority.engine.detail}\n\n"
-            "No sandwich was consulted during the drafting of these regulations.")
+            "no sandwich was consulted during the drafting of these regulations.\n\n"
+            f"{support.BLURB}\n"
+            f"btc: {support.BTC_ADDRESS}\n"
+            f"{support.PROJECTS_URL}")
+
+
+def _link(parent: tk.Widget, url: str, text: str = "") -> tk.Label:
+    """a clickable hyperlink: blue, underlined, hand cursor, opens a browser."""
+    label = tk.Label(parent, text=text or url, font=("Segoe UI", 10, "underline"),
+                     background=PAPER, foreground=LINK, cursor="hand2")
+
+    def open_it(_event=None) -> None:
+        try:
+            webbrowser.open_new_tab(url)
+        except Exception:  # no browser, no display, no handler registered
+            label.configure(text=f"{url}  (could not open a browser)")
+
+    label.bind("<Button-1>", open_it)
+    label.bind("<Enter>", lambda _e: label.configure(foreground=LINK_ACTIVE))
+    label.bind("<Leave>", lambda _e: label.configure(foreground=LINK))
+    _tooltip(label, f"open {url}")
+    return label
 
 
 def _make_text(parent: tk.Widget) -> tk.Text:
@@ -548,10 +655,37 @@ def _make_text(parent: tk.Widget) -> tk.Text:
     return text
 
 
+#: urls inside the read-only text views get turned into live links. the
+#: trailing-character class excludes the punctuation that usually follows a
+#: url in prose rather than belonging to it.
+_URL_RE = re.compile(r"https?://[^\s<>\"')\]]+")
+
+
+def _linkify(widget: tk.Text, content: str) -> None:
+    """tag every url in a Text widget so it can be clicked.
+
+    tk counts characters the same way python does, newlines included, so a
+    plain string offset converts straight into a "1.0+Nc" index.
+    """
+    for tag in widget.tag_names():
+        if tag.startswith("url-"):
+            widget.tag_delete(tag)
+
+    for index, match in enumerate(_URL_RE.finditer(content)):
+        tag = f"url-{index}"
+        widget.tag_add(tag, f"1.0+{match.start()}c", f"1.0+{match.end()}c")
+        widget.tag_configure(tag, foreground=LINK, underline=True)
+        widget.tag_bind(tag, "<Button-1>",
+                        lambda _e, url=match.group(): webbrowser.open_new_tab(url))
+        widget.tag_bind(tag, "<Enter>", lambda _e: widget.configure(cursor="hand2"))
+        widget.tag_bind(tag, "<Leave>", lambda _e: widget.configure(cursor=""))
+
+
 def _replace(widget: tk.Text, content: str) -> None:
     widget.configure(state="normal")
     widget.delete("1.0", "end")
     widget.insert("1.0", content)
+    _linkify(widget, content)
     widget.configure(state="disabled")
 
 

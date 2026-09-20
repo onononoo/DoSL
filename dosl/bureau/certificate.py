@@ -1,9 +1,9 @@
 """
 dosl.bureau.certificate -- renders an adjudication as something you can print.
 
-Strictly 7-bit ASCII. The Windows console's default code page is not UTF-8,
-and a certificate that raises UnicodeEncodeError on the last line is worse
-than no certificate at all. It also, conveniently, looks exactly like
+strictly 7-bit ascii. the windows console's default code page is not utf-8,
+and a certificate that raises unicodeencodeerror on the last line is worse
+than no certificate at all. it also, conveniently, looks exactly like
 something printed by a government in 1974.
 """
 
@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import textwrap
 
+from .. import support
 from .departments import Adjudication, Verdict
 
 WIDTH = 74
@@ -18,16 +19,16 @@ RULE = "=" * WIDTH
 THIN = "-" * WIDTH
 
 _STAMP = {
-    Verdict.APPROVED: "  * * *   A P P R O V E D   * * *  ",
-    Verdict.CONDITIONAL: " A P P R O V E D  ( C O N D . ) ",
-    Verdict.PROVISIONAL: "  P R O V I S I O N A L  ",
-    Verdict.REFERRED: "  R E F E R R E D  ",
-    Verdict.DENIED: "  D E N I E D  ",
+    Verdict.APPROVED: "  * * *   a p p r o v e d   * * *  ",
+    Verdict.CONDITIONAL: " a p p r o v e d  ( c o n d . ) ",
+    Verdict.PROVISIONAL: "  p r o v i s i o n a l  ",
+    Verdict.REFERRED: "  r e f e r r e d  ",
+    Verdict.DENIED: "  d e n i e d  ",
 }
 
 
 def _wrap(text: str, indent: str = "  ", width: int = WIDTH) -> list[str]:
-    """Wrap to the certificate width, hanging bullets and tags by two spaces."""
+    """wrap to the certificate width, hanging bullets and tags by two spaces."""
     hang = indent + ("  " if text[:1] in "-[" else "")
     return textwrap.wrap(text, width=width - len(indent), initial_indent=indent,
                          subsequent_indent=hang) or [indent.rstrip()]
@@ -43,11 +44,11 @@ def _row(left: str, right: str) -> str:
 
 
 def _fit(lines: list[str]) -> str:
-    """Final guarantee that nothing exceeds the page.
+    """final guarantee that nothing exceeds the page.
 
-    Most lines are wrapped correctly on the way in, but a 40-character
+    most lines are wrapped correctly on the way in, but a 40-character
     applicant name or a very long filling list can still overflow a row that
-    was built with an f-string. Rather than audit every format string, the
+    was built with an f-string. rather than audit every format string, the
     renderers pass their output through here on the way out.
     """
     out: list[str] = []
@@ -63,8 +64,23 @@ def _fit(lines: list[str]) -> str:
     return "\n".join(out)
 
 
+def _show(value: object) -> str:
+    """render one submitted answer for schedule c.
+
+    booleans get spelled out as yes/no rather than left as python's ``True``
+    and ``False``, which are the only two words on the whole certificate that
+    would otherwise arrive capitalised.
+    """
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, list):
+        return ", ".join(str(item) for item in value) or "(none)"
+    text = str(value)
+    return text if text else "(blank)"
+
+
 def _bar(score: float, width: int = 32) -> str:
-    """A score bar sized so the whole row fits in WIDTH without wrapping.
+    """a score bar sized so the whole row fits in WIDTH without wrapping.
 
     label (31) + bracket + width + bracket + space + "100.00" must stay
     under 74, which caps the bar at 33.
@@ -74,34 +90,34 @@ def _bar(score: float, width: int = 32) -> str:
 
 
 def render(adjudication: Adjudication) -> str:
-    """The short form: the bit you would pin to a noticeboard."""
+    """the short form: the bit you would pin to a noticeboard."""
     lines = [
         RULE,
-        _centre("DEPARTMENT OF SANDWICH LEGITIMACY"),
-        _centre("Office of Adjudication and Standing"),
-        _centre("NIHIL SINE FORMA"),
+        _centre("department of sandwich legitimacy"),
+        _centre("office of adjudication and standing"),
+        _centre("nihil sine forma"),
         RULE,
         "",
-        _row(f"  Reference : {adjudication.reference}",
-             f"Issued : {adjudication.issued}  "),
-        _row(f"  Applicant : {adjudication.applicant}",
-             f"Seal : {adjudication.seal}  "),
+        _row(f"  reference : {adjudication.reference}",
+             f"issued : {adjudication.issued}  "),
+        _row(f"  applicant : {adjudication.applicant}",
+             f"seal : {adjudication.seal}  "),
         "",
         THIN,
         _centre(_STAMP[adjudication.verdict]),
         _centre(adjudication.verdict.label),
         THIN,
         "",
-        f"  Composite legitimacy score   {_bar(adjudication.score)}",
+        f"  composite legitimacy score   {_bar(adjudication.score)}",
         "",
     ]
 
-    lines.append("  DEPARTMENTAL FINDINGS")
+    lines.append("  departmental findings")
     for result in adjudication.results:
         if result.error:
             lines.append(f"    {result.title:<36} {'--':>6}  {result.error}")
             continue
-        flag = "VETO" if result.veto else "    "
+        flag = "veto" if result.veto else "    "
         lines.append(
             f"    {result.title:<36} {result.score:6.2f}  "
             f"(w{result.weight:.1f}) {flag}")
@@ -109,14 +125,14 @@ def render(adjudication: Adjudication) -> str:
 
     findings = adjudication.findings
     if findings:
-        lines.append("  OBJECTIONS AND OBSERVATIONS")
+        lines.append("  objections and observations")
         for finding in findings:
-            tag = f"[{finding.kind.name[:4]} {finding.severity}]"
+            tag = f"[{finding.kind.name.lower()[:4]} {finding.severity}]"
             lines.extend(_wrap(f"{tag} {finding.message}", indent="    "))
         lines.append("")
 
     if adjudication.notes:
-        lines.append("  MARGINALIA")
+        lines.append("  marginalia")
         for note in adjudication.notes:
             lines.extend(_wrap(f"- {note}", indent="    "))
         lines.append("")
@@ -125,8 +141,8 @@ def render(adjudication: Adjudication) -> str:
         THIN,
         *_wrap(adjudication.verdict.advice, indent="  "),
         THIN,
-        *_wrap("This certificate is valid for the duration of the sandwich. "
-               "It confers no rights, transfers no title, and may be revoked "
+        *_wrap("this certificate is valid for the duration of the sandwich. "
+               "it confers no rights, transfers no title, and may be revoked "
                "retroactively.", indent="  "),
         RULE,
     ])
@@ -134,16 +150,16 @@ def render(adjudication: Adjudication) -> str:
 
 
 def full_report(adjudication: Adjudication) -> str:
-    """The long form: every adjustment, every citation, every department."""
+    """the long form: every adjustment, every citation, every department."""
     lines = [render(adjudication), "", RULE,
-             _centre("SCHEDULE A -- DETAILED DEPARTMENTAL RECORD"), RULE]
+             _centre("schedule a -- detailed departmental record"), RULE]
 
     for result in adjudication.results:
         lines.append("")
         lines.append(f"{result.title}   [{result.slug}]")
         lines.append(THIN)
         if result.error:
-            lines.extend(_wrap(f"Did not sit: {result.error}"))
+            lines.extend(_wrap(f"did not sit: {result.error}"))
             continue
         outcome = result.outcome
         lines.append(_row(f"  baseline {outcome.baseline:.2f}",
@@ -155,26 +171,27 @@ def full_report(adjudication: Adjudication) -> str:
                                indent="    "))
         for finding in outcome.findings:
             lines.extend(_wrap(
-                f"{finding.kind.name:<12} sev {finding.severity}  {finding.message}",
-                indent="    "))
+                f"{finding.kind.name.lower():<12} sev {finding.severity}  "
+                f"{finding.message}", indent="    "))
         for note in outcome.notes:
             lines.extend(_wrap(f"note: {note}", indent="    "))
 
     if adjudication.citations:
-        lines.extend(["", RULE, _centre("SCHEDULE B -- REGULATIONS CITED"), RULE, ""])
+        lines.extend(["", RULE, _centre("schedule b -- regulations cited"),
+                      RULE, ""])
         for citation in adjudication.citations:
             lines.extend(_wrap(f"- {citation}"))
 
-    lines.extend(["", RULE, _centre("SCHEDULE C -- SUBMITTED PARTICULARS"), RULE, ""])
+    lines.extend(["", RULE, _centre("schedule c -- submitted particulars"),
+                  RULE, ""])
     for key, value in adjudication.form.items():
-        shown = ", ".join(value) if isinstance(value, list) else str(value)
-        lines.extend(_wrap(f"{key:<20} {shown or '(blank)'}", indent="  "))
+        lines.extend(_wrap(f"{key:<20} {_show(value)}", indent="  "))
 
     lines.extend(["", THIN, *_wrap(f"engine: {adjudication.engine}"), THIN])
-    return _fit(lines)
+    return _fit(lines) + "\n\n" + support.as_text(WIDTH)
 
 
 def one_line(adjudication: Adjudication) -> str:
-    """For the ledger view and anywhere else that is short of room."""
+    """for the ledger view and anywhere else that is short of room."""
     return (f"{adjudication.reference}  {adjudication.verdict.label:<24} "
             f"{adjudication.score:6.2f}  {adjudication.applicant}")

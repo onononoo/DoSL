@@ -21,8 +21,9 @@ this::
 
     ASSESS 100 - 4 * max(0, wet - 3)
 
-Whitespace and newlines are insignificant; blocks close with ``END``.
-Comments run from ``#`` to end of line. Keywords are ALL CAPS and reserved.
+Whitespace and newlines are insignificant; blocks close with ``end``.
+Comments run from ``#`` to end of line. Keywords are reserved, and matched
+case-insensitively: ``require``, ``REQUIRE`` and ``Require`` are one word.
 """
 
 from __future__ import annotations
@@ -119,8 +120,14 @@ def tokenize(source: str, origin: str = "<policy>") -> list[Token]:
         elif kind == "string":
             tokens.append(Token(T.STRING, _unescape(text[1:-1]), line, col))
         elif kind == "word":
-            tokens.append(Token(T.KEYWORD if text in KEYWORDS else T.IDENT,
-                                text, line, col))
+            # keywords are recognised case-insensitively and normalised to
+            # upper case, so the parser only ever compares one spelling while
+            # policy authors may write REQUIRE, require or Require.
+            folded = text.upper()
+            if folded in KEYWORDS:
+                tokens.append(Token(T.KEYWORD, folded, line, col))
+            else:
+                tokens.append(Token(T.IDENT, text, line, col))
         else:
             tokens.append(Token(T.OP, text, line, col))
         pos = match.end()
